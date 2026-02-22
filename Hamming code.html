@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hamming(7,4) Simulator Terminal</title>
+    <style>
+        body { background: #0a0a0a; color: #33ff33; font-family: 'Consolas', monospace; padding: 25px; }
+        #console { max-width: 900px; margin: 0 auto; border: 1px solid #333; padding: 20px; box-shadow: 0 0 20px rgba(0,255,0,0.1); border-radius: 8px; }
+        .prompt { color: #33ff33; margin-right: 10px; font-weight: bold; }
+        input { background: transparent; border: none; color: #fff; font-family: inherit; font-size: inherit; outline: none; width: 80%; }
+        .line { margin-bottom: 8px; white-space: pre-wrap; }
+        .success { color: #50fa7b; }
+        .error { color: #ff5555; }
+        .header { color: #8be9fd; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div id="console">
+        <div class="header">HAMMING(7,4) ERROR CORRECTION PROTOCOL [v1.0.4]</div>
+        <div id="output"></div>
+        <div class="line">
+            <span class="prompt">></span><input type="text" id="cmd" autofocus spellcheck="false">
+        </div>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+        const cmd = document.getElementById('cmd');
+        let state = 'INPUT'; let data = []; let codeword = [];
+
+        print("System ready. Please enter 4 data bits (e.g., 1011):");
+
+        function print(text, cls = "") {
+            const div = document.createElement('div');
+            div.className = 'line ' + cls;
+            div.innerText = text;
+            output.appendChild(div);
+            // Auto-scroll to bottom
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+
+        cmd.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const val = cmd.value.trim();
+                print("> " + val);
+                cmd.value = '';
+                handle(val);
+            }
+        });
+
+        function handle(val) {
+            if (state === 'INPUT') {
+                // Validation: Must be 4 bits
+                if (!/^[01]{4}$/.test(val)) {
+                    return print("Execution Error: Invalid input. Exactly 4 bits (0/1) required.", "error");
+                }
+                
+                data = val.split('').map(Number);
+                
+                // Hamming Logic (Same as C++ Engine)
+                const p1 = data[0] ^ data[1] ^ data[3];
+                const p2 = data[0] ^ data[2] ^ data[3];
+                const p3 = data[1] ^ data[2] ^ data[3];
+                
+                codeword = [p1, p2, data[0], p3, data[1], data[2], data[3]];
+                
+                print(`Codeword Generated: ${codeword.join('')}`);
+                print("Select bit position to corrupt (1-7):");
+                state = 'FLIP';
+            } else {
+                const i = parseInt(val) - 1;
+                if (isNaN(i) || i < 0 || i > 6) {
+                    return print("Execution Error: Position must be between 1 and 7.", "error");
+                }
+
+                // Inject bit flip
+                codeword[i] ^= 1;
+                print(`Transmission Received: ${codeword.join('')}`);
+
+                // Syndrome Calculation
+                const s1 = codeword[0] ^ codeword[2] ^ codeword[4] ^ codeword[6];
+                const s2 = codeword[1] ^ codeword[2] ^ codeword[5] ^ codeword[6];
+                const s3 = codeword[3] ^ codeword[4] ^ codeword[5] ^ codeword[6];
+                
+                const syndromeDec = (s3 << 2) | (s2 << 1) | s1;
+                
+                print(`Analyzing Syndrome... (S3S2S1: ${s3}${s2}${s1})`);
+
+                if (syndromeDec === 0) {
+                    print("Status: Data integrity verified. No errors found.", "success");
+                } else {
+                    print(`Status: Error detected at bit position ${syndromeDec}.`, "error");
+                    codeword[syndromeDec - 1] ^= 1; // Repair bit
+                    print(`Correction applied: ${codeword.join('')}`, "success");
+                    const recovered = "" + codeword[2] + codeword[4] + codeword[5] + codeword[6];
+                    print(`Recovered Data: ${recovered}`, "success");
+                }
+
+                print("\nRestarting session. Enter 4 bits:");
+                state = 'INPUT';
+            }
+        }
+    </script>
+</body>
+</html>
