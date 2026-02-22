@@ -35,7 +35,6 @@
             div.className = 'line ' + cls;
             div.innerText = text;
             output.appendChild(div);
-            // Auto-scroll to bottom
             window.scrollTo(0, document.body.scrollHeight);
         }
 
@@ -50,14 +49,13 @@
 
         function handle(val) {
             if (state === 'INPUT') {
-                // Validation: Must be 4 bits
+
                 if (!/^[01]{4}$/.test(val)) {
                     return print("Execution Error: Invalid input. Exactly 4 bits (0/1) required.", "error");
                 }
                 
                 data = val.split('').map(Number);
                 
-                // Hamming Logic (Same as C++ Engine)
                 const p1 = data[0] ^ data[1] ^ data[3];
                 const p2 = data[0] ^ data[2] ^ data[3];
                 const p3 = data[1] ^ data[2] ^ data[3];
@@ -73,11 +71,9 @@
                     return print("Execution Error: Position must be between 1 and 7.", "error");
                 }
 
-                // Inject bit flip
                 codeword[i] ^= 1;
                 print(`Transmission Received: ${codeword.join('')}`);
 
-                // Syndrome Calculation
                 const s1 = codeword[0] ^ codeword[2] ^ codeword[4] ^ codeword[6];
                 const s2 = codeword[1] ^ codeword[2] ^ codeword[5] ^ codeword[6];
                 const s3 = codeword[3] ^ codeword[4] ^ codeword[5] ^ codeword[6];
@@ -102,4 +98,5 @@
         }
     </script>
 </body>
+
 </html>
